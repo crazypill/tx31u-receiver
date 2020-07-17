@@ -5,16 +5,16 @@
       location = "group:tx31u-receiver.ino">
    </FileRef>
    <FileRef
-      location = "group:TXDecoder.h">
+      location = "container:TXDecoder.h">
    </FileRef>
    <FileRef
-      location = "group:/Users/alex/Desktop/TX31U-ITReceiver/TXDecoderFrame.h">
+      location = "container:TXDecoderFrame.h">
    </FileRef>
    <FileRef
-      location = "group:TXDecoder.cpp">
+      location = "container:TXDecoder.cpp">
    </FileRef>
    <Group
-      location = "group:RadioHead-folabs"
+      location = "container:RadioHead-folabs"
       name = "RadioHead-folabs">
       <FileRef
          location = "group:RH_NRF24.h">
