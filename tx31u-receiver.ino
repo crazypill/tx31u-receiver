@@ -11,7 +11,6 @@
 #include <SPI.h>
 #include <RH_RF69.h>
 #include <Wire.h>
-#include <Adafruit_BMP085.h>
 
 #include "TXDecoder.h"
 
@@ -310,9 +309,6 @@ void SerialPrint_P(PGM_P str, void (*f)(uint8_t) = SerialWrite ) {
 #define RF_RXBW_EXP_7                 0x07
 #define RF69_FSTEP  61.03515625 // == FXOSC / 2^19 = 32MHz / 2^19 (p13 in datasheet)  -- huh? I get 66.7572021484375
 
-#define pascal2inchHg 0.0002953
-#define c2f( a ) ((a * 1.8000) + 32)
-#define kLocalOffsetInHg 0.33
 #define kBlinkThreshold  1700000    // these are the number of loops that need to happen before we blink-  not _really_ time based...
 
 // these were found using a RTL-SDR to find the best carrier frequency
@@ -321,15 +317,13 @@ void SerialPrint_P(PGM_P str, void (*f)(uint8_t) = SerialWrite ) {
 #define RF69_FREQ2 919.966
 
 #define outputPort Serial
-//#define outputPort Serial1
 
 
 // Singleton instance of the radio driver
-RH_RF69         rf69(RFM69_CS, RFM69_INT);
-Adafruit_BMP085 bmp;
+RH_RF69 rf69(RFM69_CS, RFM69_INT);
 
 static int16_t packetnum = 0;  // packet counter, we increment per xmission
-static int s_lna_gain = 0;
+static int  s_lna_gain = 0;
 static bool s_output_temp = false;
 static bool s_read_rssi = false;
 static int  s_blink_counter = 0;
@@ -361,10 +355,7 @@ void setup()
         while (1);
     }
 
-    if( !bmp.begin() ) {
-        outputPort.println("Could not find a valid BMP085 sensor, check wiring!");
-        while (1) {}
-    }
+    TxDecoderInit();
     
     // Defaults after init are 434.0MHz, modulation GFSK_Rb250Fd250, +13dbM (for low power module)
     // No encryption
@@ -397,7 +388,6 @@ void setup()
     rf69.setTxPower(20, true);  // range from 14-20 for power, 2nd arg must be true for 69HCW
     
     outputPort.println("RFM69 based TX31U-IT receiver starting up...\nFar Out Labs, LLC (c) 2020");
-    PrintTempPressure();
 }
 
 void receive()
@@ -507,15 +497,6 @@ void loop()
             rf69.spiWrite(RH_RF69_REG_18_LNA, s_lna_gain);
             outputPort.print( "LNA gain: " ); outputPort.println( s_lna_gain );
         }
-        else if( k == 't' )
-        {
-            s_output_temp = !s_output_temp;
-        }
-        else if( k == 'p' )
-        {
-            PrintTempPressure();
-            outputPort.println();
-        }
     }
 
 
@@ -533,32 +514,6 @@ void loop()
         outputPort.print( "rssiRead: " );
         outputPort.println( rf69.rssiRead() );
     }
-
-    if( s_output_temp )
-        PlotTempPressure();
-}
-
-
-
-void PrintTempPressure()
-{
-    outputPort.print("Temperature = ");
-    outputPort.print( c2f( bmp.readTemperature() ) );
-    outputPort.println(" °F");
-
-    outputPort.print("Pressure = ");
-    outputPort.print( (bmp.readPressure() * pascal2inchHg) + kLocalOffsetInHg );
-    outputPort.println(" inHg");
-}
-
-
-
-void PlotTempPressure()
-{
-    outputPort.print(" ");
-    outputPort.print( c2f( bmp.readTemperature() ) );
-    outputPort.print(" ");
-    outputPort.println( (bmp.readPressure() * pascal2inchHg) + kLocalOffsetInHg );
 }
 
 

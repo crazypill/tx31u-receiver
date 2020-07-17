@@ -6,6 +6,8 @@
 //
 
 #include "TXDecoder.h"
+#include <Adafruit_BMP085.h>
+
 
 /*
 http://www.g-romahn.de/ws1600/Datepakete_raw.txt
@@ -53,9 +55,6 @@ Temp  044 Humi 91 Rain 000 Wind 028  Dir 180 Gust 097  ( 4.4 °C, 91 %rH, no rai
 //#define DEBUG_PRINT
 
 
-#define c2f( a ) (((a) * 1.8000) + 32)
-#define ms2mph( a ) ((a) * 2.23694)
-#define km2mph( a ) ((a) / 0.621371)
 
 
 #ifdef DEBUG_PRINT
@@ -68,6 +67,8 @@ void SerialWrite ( uint8_t c ) {
 void DebugPrint_P(PGM_P str, void (*f)(uint8_t) = SerialWrite ) {
   for (uint8_t c; (c = pgm_read_byte(str)); str++) (*f)(c);
 }
+#else
+#define DebugPrint(x)
 #endif
 
 
@@ -83,6 +84,9 @@ enum
     kType_gust
 };
 
+
+
+Adafruit_BMP085 bmp;
 
 
 
@@ -132,6 +136,16 @@ uint8_t reverseBits( uint8_t num )
 
 
 #pragma mark -
+
+
+void TxDecoderInit()
+{
+    if( !bmp.begin() )
+    {
+        DebugPrint( "Could not find a valid BMP085 sensor, check wiring!\n" );
+        while (1) {}
+    }
+}
 
 
 uint8_t DecodeFrame( uint8_t* bytes, Frame* frame )
@@ -295,10 +309,10 @@ uint8_t DecodeFrame( uint8_t* bytes, Frame* frame )
 
             // also shove the internal temp and pressure in there
             frame->intTempC = bmp.readTemperature();
-            frame->flags |= kDataFlags_intTemp;
+            frame->flags |= kDataFlag_intTemp;
 
-            frame->pressure = (bmp.readPressure() * pascal2inchHg) + kLocalOffsetInHg;
-            frame->flags |= kDataFlags_pressure;
+            frame->pressureInHg = (bmp.readPressure() * pascal2inchHg) + kLocalOffsetInHg;
+            frame->flags |= kDataFlag_pressure;
 
             // advance to next quartet
             q += 4;
