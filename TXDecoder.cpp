@@ -214,7 +214,7 @@ uint8_t DecodeFrame( uint8_t* bytes, Frame* frame )
                 t -= 40;
                 
 //                sprintf( textBuffer, "%0.2f°F, %0.2f°C", c2f(t), t );
-                sprintf( textBuffer, "%0.1f°F, %0.1f°C", c2f(t), t );
+                sprintf( textBuffer, "%0.2f°F, %0.1f°C", c2f(t), t );
                 Serial.println( textBuffer );
             }
             else if( type == kType_rain )
