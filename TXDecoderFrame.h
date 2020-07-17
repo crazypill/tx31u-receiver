@@ -27,7 +27,7 @@ typedef struct
     uint8_t   humidity;      // 0 - 100
     float     tempC;         // temp from weather sensor in celsius
     float     intTempC;      // internal temp in celsius
-    float     pressureInHg;  // internal pressure in inches mercury
+    float     pressure;      // internal pressure in millibars
     float     windSpeedMs;   // meters/sec
     float     windGustMs;    // meters/sec
     float     rain;

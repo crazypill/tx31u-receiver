@@ -311,7 +311,7 @@ uint8_t DecodeFrame( uint8_t* bytes, Frame* frame )
             frame->intTempC = bmp.readTemperature();
             frame->flags |= kDataFlag_intTemp;
 
-            frame->pressureInHg = (bmp.readPressure() * pascal2inchHg) + kLocalOffsetInHg;
+            frame->pressure = (bmp.readPressure() * pascal2millibar);
             frame->flags |= kDataFlag_pressure;
 
             // advance to next quartet
