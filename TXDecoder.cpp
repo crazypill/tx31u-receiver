@@ -293,6 +293,13 @@ uint8_t DecodeFrame( uint8_t* bytes, Frame* frame )
                 DebugPrint( "\n"  );
 #endif
 
+            // also shove the internal temp and pressure in there
+            frame->intTempC = bmp.readTemperature();
+            frame->flags |= kDataFlags_intTemp;
+
+            frame->pressure = (bmp.readPressure() * pascal2inchHg) + kLocalOffsetInHg;
+            frame->flags |= kDataFlags_pressure;
+
             // advance to next quartet
             q += 4;
         }

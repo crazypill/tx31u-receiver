@@ -2,7 +2,7 @@
 <Workspace
    version = "1.0">
    <FileRef
-      location = "group:TX31U-ITReceiver.ino">
+      location = "group:tx31u-receiver.ino">
    </FileRef>
    <FileRef
       location = "group:TXDecoder.h">
