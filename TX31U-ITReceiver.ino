@@ -320,6 +320,8 @@ void SerialPrint_P(PGM_P str, void (*f)(uint8_t) = SerialWrite ) {
 #define RF69_FREQ1 915.000
 #define RF69_FREQ2 919.966
 
+#define outputPort Serial
+//#define outputPort Serial1
 
 
 // Singleton instance of the radio driver
@@ -335,10 +337,13 @@ static uint8_t s_freq = 0;
  
 void setup()
 {
-    Serial.begin(9600);
+//    outputPort.begin( 9600 );
+
+    Serial.begin( 9600 );
+    Serial1.begin( 9600 );
 
 #ifdef DEBUG
-    while (!Serial) { delay(1); } // wait until serial console is open, remove if not tethered to computer
+    while (!outputPort) { delay(1); } // wait until serial console is open, remove if not tethered to computer
 #endif
 
     pinMode(LED, OUTPUT);
@@ -352,19 +357,19 @@ void setup()
     delay(10);
     
     if( !rf69.init() ) {
-        Serial.println("RFM69 radio init failed");
+        outputPort.println("RFM69 radio init failed");
         while (1);
     }
 
     if( !bmp.begin() ) {
-        Serial.println("Could not find a valid BMP085 sensor, check wiring!");
+        outputPort.println("Could not find a valid BMP085 sensor, check wiring!");
         while (1) {}
     }
     
     // Defaults after init are 434.0MHz, modulation GFSK_Rb250Fd250, +13dbM (for low power module)
     // No encryption
     if( !rf69.setFrequency(RF69_FREQ) ) {
-        Serial.println("setFrequency failed");
+        outputPort.println("setFrequency failed");
     }
 
     rf69.spiWrite(RH_RF69_REG_13_OCP, RF_OCP_OFF);
@@ -391,7 +396,7 @@ void setup()
     // ishighpowermodule flag set like this:
     rf69.setTxPower(20, true);  // range from 14-20 for power, 2nd arg must be true for 69HCW
     
-    Serial.println("RFM69 based TX31U-IT receiver starting up...\nFar Out Labs, LLC (c) 2020");
+    outputPort.println("RFM69 based TX31U-IT receiver starting up...\nFar Out Labs, LLC (c) 2020");
     PrintTempPressure();
 }
 
@@ -407,7 +412,7 @@ void receive()
         {
             if (!len)
             {
-                Serial.println( "Empty receive buffer!" );
+                outputPort.println( "Empty receive buffer!" );
                 return;
             }
 
@@ -419,12 +424,12 @@ void receive()
                     Blink(LED, 100, 1);
                     frequencyHop();
                 }
-                Serial.println( "." );
+                outputPort.println( "." );
             }
         }
         else
         {
-            Serial.println("Receive failed");
+            outputPort.println("Receive failed");
         }
     }
 }
@@ -440,14 +445,14 @@ void frequencyHop()
     {
         case 0:
             if( !rf69.setFrequency( RF69_FREQ1 ) )
-                Serial.println("setFrequency failed: 915MHz");
-            Serial.println("\nhop to: 915MHz");
+                outputPort.println("setFrequency failed: 915MHz");
+            outputPort.println("\nhop to: 915MHz");
             break;
 
         case 1:
             if( !rf69.setFrequency( RF69_FREQ2 ) )
-                Serial.println("setFrequency failed: 920MHz");
-            Serial.println("\nhop to: 920MHz");
+                outputPort.println("setFrequency failed: 920MHz");
+            outputPort.println("\nhop to: 920MHz");
             break;
     }
 }
@@ -463,20 +468,20 @@ void frequencyHop()
     {
         case 0:
             if( !rf69.setFrequency( RF69_FREQ ) )
-                Serial.println("setFrequency failed: 910MHz");
-            Serial.println("\nhop to: 910MHz");
+                outputPort.println("setFrequency failed: 910MHz");
+            outputPort.println("\nhop to: 910MHz");
             break;
 
         case 1:
             if( !rf69.setFrequency( RF69_FREQ1 ) )
-                Serial.println("setFrequency failed: 915MHz");
-            Serial.println("\nhop to: 915MHz");
+                outputPort.println("setFrequency failed: 915MHz");
+            outputPort.println("\nhop to: 915MHz");
             break;
 
         case 2:
             if( !rf69.setFrequency( RF69_FREQ2 ) )
-                Serial.println("setFrequency failed: 920MHz");
-            Serial.println("\nhop to: 920MHz");
+                outputPort.println("setFrequency failed: 920MHz");
+            outputPort.println("\nhop to: 920MHz");
             break;
     }
 }
@@ -484,9 +489,9 @@ void frequencyHop()
 
 void loop()
 {
-    if( Serial.available() )
+    if( outputPort.available() )
     {
-        char k = Serial.read();
+        char k = outputPort.read();
         if( k == 'r' )
             ReadAllRegs();
         else if ( k == 'z' )
@@ -500,7 +505,7 @@ void loop()
             s_lna_gain = 0;
 
             rf69.spiWrite(RH_RF69_REG_18_LNA, s_lna_gain);
-            Serial.print( "LNA gain: " ); Serial.println( s_lna_gain );
+            outputPort.print( "LNA gain: " ); outputPort.println( s_lna_gain );
         }
         else if( k == 't' )
         {
@@ -509,7 +514,7 @@ void loop()
         else if( k == 'p' )
         {
             PrintTempPressure();
-            Serial.println();
+            outputPort.println();
         }
     }
 
@@ -525,8 +530,8 @@ void loop()
 
     if( s_read_rssi )
     {
-        Serial.print( "rssiRead: " );
-        Serial.println( rf69.rssiRead() );
+        outputPort.print( "rssiRead: " );
+        outputPort.println( rf69.rssiRead() );
     }
 
     if( s_output_temp )
@@ -537,23 +542,23 @@ void loop()
 
 void PrintTempPressure()
 {
-    Serial.print("Temperature = ");
-    Serial.print( c2f( bmp.readTemperature() ) );
-    Serial.println(" °F");
+    outputPort.print("Temperature = ");
+    outputPort.print( c2f( bmp.readTemperature() ) );
+    outputPort.println(" °F");
 
-    Serial.print("Pressure = ");
-    Serial.print( (bmp.readPressure() * pascal2inchHg) + kLocalOffsetInHg );
-    Serial.println(" inHg");
+    outputPort.print("Pressure = ");
+    outputPort.print( (bmp.readPressure() * pascal2inchHg) + kLocalOffsetInHg );
+    outputPort.println(" inHg");
 }
 
 
 
 void PlotTempPressure()
 {
-    Serial.print(" ");
-    Serial.print( c2f( bmp.readTemperature() ) );
-    Serial.print(" ");
-    Serial.println( (bmp.readPressure() * pascal2inchHg) + kLocalOffsetInHg );
+    outputPort.print(" ");
+    outputPort.print( c2f( bmp.readTemperature() ) );
+    outputPort.print(" ");
+    outputPort.println( (bmp.readPressure() * pascal2inchHg) + kLocalOffsetInHg );
 }
 
 
@@ -585,23 +590,23 @@ void ReadAllRegs()
   long freqCenter = 0;
 #endif
   
-  Serial.println("Address - HEX - BIN");
+  outputPort.println("Address - HEX - BIN");
   for (uint8_t regAddr = 1; regAddr <= 0x4F; regAddr++)
   {
     regVal = rf69.spiRead(regAddr);
 
-    Serial.print(regAddr, HEX);
-    Serial.print(" - ");
+    outputPort.print(regAddr, HEX);
+    outputPort.print(" - ");
 #ifdef REGISTER_DETAIL
     if( regAddr <= RH_RF69_REG_4F_TEMP2 )
     {
-      Serial.print( s_reg_names[regAddr] );
-      Serial.print(" - ");
+      outputPort.print( s_reg_names[regAddr] );
+      outputPort.print(" - ");
     }
 #endif
-    Serial.print(regVal,HEX);
-    Serial.print(" - ");
-    Serial.println(regVal,BIN);
+    outputPort.print(regVal,HEX);
+    outputPort.print(" - ");
+    outputPort.println(regVal,BIN);
 
 #ifdef REGISTER_DETAIL
     switch ( regAddr )
@@ -639,7 +644,7 @@ void ReadAllRegs()
             } else if ( capVal = 0b100 ) {
                 SerialPrint ( "100 -> Receiver Mode (RX)\n" );
             } else {
-                Serial.print( capVal, BIN );
+                outputPort.print( capVal, BIN );
                 SerialPrint ( " -> RESERVED\n" );
             }
             SerialPrint ( "\n" );
@@ -716,7 +721,7 @@ void ReadAllRegs()
             bitRate |= regVal;
             SerialPrint ( "Bit Rate (Chip Rate when Manchester encoding is enabled)\nBitRate : ");
             unsigned long val = 32UL * 1000UL * 1000UL / bitRate;
-            Serial.println( val );
+            outputPort.println( val );
             SerialPrint( "\n" );
             break;
         }
@@ -730,7 +735,7 @@ void ReadAllRegs()
             freqDev |= regVal;
             SerialPrint( "Frequency deviation\nFdev : " );
             unsigned long val = RF69_FSTEP * freqDev;
-            Serial.println( val );
+            outputPort.println( val );
             SerialPrint ( "\n" );
             break;
         }
@@ -751,7 +756,7 @@ void ReadAllRegs()
             freqCenter = freqCenter | regVal;
             SerialPrint ( "RF Carrier frequency\nFRF : " );
             unsigned long val = RF69_FSTEP * freqCenter;
-            Serial.println( val );
+            outputPort.println( val );
             SerialPrint( "\n" );
             break;
         }

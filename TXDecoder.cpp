@@ -50,13 +50,27 @@ Temp  044 Humi 91 Rain 000 Wind 028  Dir 180 Gust 097  ( 4.4 °C, 91 %rH, no rai
 
 //#define PRINT_BAD_DATA
 //#define PRINT_PAYLOAD
-
-
+//#define DEBUG_PRINT
 
 
 #define c2f( a ) (((a) * 1.8000) + 32)
 #define ms2mph( a ) ((a) * 2.23694)
 #define km2mph( a ) ((a) / 0.621371)
+
+
+#ifdef DEBUG_PRINT
+// debug print
+#define DebugPrint(x) DebugPrint_P(PSTR(x))
+void SerialWrite ( uint8_t c ) {
+    Serial.write ( c );
+}
+
+void DebugPrint_P(PGM_P str, void (*f)(uint8_t) = SerialWrite ) {
+  for (uint8_t c; (c = pgm_read_byte(str)); str++) (*f)(c);
+}
+#endif
+
+
 
 
 
@@ -127,16 +141,8 @@ uint8_t DecodeFrame( uint8_t* bytes, Frame* frame )
     frame->magic = (bytes[0] & 0xF0) >> 4;
     frame->frameLength = quartets * 2 + 2 + 1;
     frame->CRC = bytes[frame->frameLength - 1];
+    frame->flags = 0;
 
-//    Serial.print( "\nFrame magic: " );
-//    Serial.println( frame->magic, HEX );
-//
-//    Serial.print( "\nFrame length: " );
-//    Serial.println( frame->frameLength );
-//
-//    Serial.print( "\nFrame CRC: " );
-//    Serial.println( frame->CRC, HEX );
-    
     if( frame->CRC != CalculateCRC( bytes, frame->frameLength - 1 ) )
     {
 #ifdef PRINT_BAD_DATA
@@ -162,48 +168,52 @@ uint8_t DecodeFrame( uint8_t* bytes, Frame* frame )
     if( !nibbles )
         return 0;
 
-//    Serial.print( "\nHibbles: " );
     for( int i = 0; i < nibbleCount; i++ )
     {
         if( i & 1 )
             nibbles[i] = bytes[i/2] & 0xF;
         else
             nibbles[i] = (bytes[i/2] & 0xF0) >> 4;
-
-//        Serial.print( nibbles[i], HEX );
     }
-//    Serial.println();
-
     
-    uint8_t station_id = nibbles[1] << 4 | (nibbles[2] & 0xC);   // did I assemble this backwards?  strip out the error and aquire bits
+    frame->station_id = nibbles[1] << 4 | (nibbles[2] & 0xC);   // did I assemble this backwards?  strip out the error and aquire bits
+    // !!@ don't forget to include error and acquiring bits in frame struct
+
+#ifdef DEBUG_PRINT
     Serial.print( "Weather station id: " );
-    Serial.print( station_id, HEX );
+    Serial.print( frame->station_id, HEX );
     Serial.print( " error: " );
     Serial.print( nibbles[2] & 0x1 );
     Serial.print( " aquire: " );
     Serial.print( nibbles[2] & 0x2 );
     Serial.print( " quartets: " );
     Serial.println( quartets );
-
+#endif
+    
+#ifdef DEBUG_PRINT
     char textBuffer[128];
     const char* compass[] = { "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW" };
     const char* types[]   = { "temp:    ", "humidity:", "rain:    ", "wind:    ", "gust:    " };
+#endif
+    
     if( nibbles[0] == 0xA )
     {
         unsigned char* q = &nibbles[4];
         for( int i = 0; i < quartets; i++ )
         {
             int type = q[0];
+
+#ifdef DEBUG_PRINT
             const char* typeStr = NULL;
             if( type >= 0 && type <= kType_gust )
                 typeStr = types[type];
             else
                 typeStr = "unknown: ";
 
-            Serial.print( "Quartet: " );
-            Serial.print( typeStr );
-            Serial.print( " " );
-
+            DebugPrint( typeStr );
+            DebugPrint( " " );
+#endif
+            
             if( type == kType_temp )
             {
                 float t = 0;
@@ -212,45 +222,78 @@ uint8_t DecodeFrame( uint8_t* bytes, Frame* frame )
                 t += q[3] * 1.0;
                 t = t / 10;
                 t -= 40;
-                
-//                sprintf( textBuffer, "%0.2f°F, %0.2f°C", c2f(t), t );
+                frame->tempC = t;
+                frame->flags |= kDataFlag_temp;
+
+#ifdef DEBUG_PRINT
                 sprintf( textBuffer, "%0.2f°F, %0.1f°C", c2f(t), t );
-                Serial.println( textBuffer );
+                DebugPrint( textBuffer );
+                DebugPrint( "\n"  );
+#endif
             }
             else if( type == kType_rain )
             {
+                frame->rain = 0;    // !!@ not implemented yet
+                frame->flags |= kDataFlag_rain;
+
+#ifdef DEBUG_PRINT
                 sprintf( textBuffer, "%u %u %u", q[1], q[2], q[3] );
-                Serial.println( textBuffer );
+                DebugPrint( textBuffer );
+                DebugPrint( "\n"  );
+#endif
             }
             else if( type == kType_humidity )
             {
-                float h = 0;
-                h += q[1] * 100.0;
-                h += q[2] * 10.0;
-                h += q[3] * 1.0;
-                sprintf( textBuffer, "%g%%", h );
-                Serial.println( textBuffer );
+                uint8_t h = 0;
+                h += q[1] * 100;
+                h += q[2] * 10;
+                h += q[3] * 1;
+                frame->humidity = h;
+                frame->flags |= kDataFlag_humidity;
+
+#ifdef DEBUG_PRINT
+                sprintf( textBuffer, "%d%%", h );
+                DebugPrint( textBuffer );
+                DebugPrint( "\n"  );
+#endif
             }
             else if( type == kType_wind )
             {
                 // first nibble direction of wind vane (multiply by 22.5 to obtain degrees, here 0xe*22.5 = 315 degrees)
                 // next two nibbles wind speed in m per sec (i.e. no more than 255 m/s; 9th bit still not found)
+                int         windspeed = (q[2] << 4) | q[3];
+                float       speed     = windspeed / 10.0;
+                frame->windSpeedMs = speed;
+                frame->windDirection = q[1] * 22.5f;
+                frame->flags |= kDataFlag_wind;
+
+#ifdef DEBUG_PRINT
                 const char* direction = compass[q[1]];
-                int windspeed = (q[2] << 4) | q[3];
-                float speed = windspeed / 10.0;
                 sprintf( textBuffer, "%0.1f°, %0.2f mph, %0.1f m/s %s", q[1] * 22.5f, ms2mph( speed ), speed, direction );
-                Serial.println( textBuffer );
+                DebugPrint( textBuffer );
+                DebugPrint( "\n"  );
+#endif
             }
             else if( type == kType_gust )
             {
                 // gust speed in m per sec - !!@ check this
                 int windgust = q[1] * 256 + q[2];
-                sprintf( textBuffer, "%d m/s", windgust );
-                Serial.println( textBuffer );
-            }
-            else
-                Serial.println();
+                frame->windGustMs = windgust;
+                frame->flags |= kDataFlag_gust;
 
+#ifdef DEBUG_PRINT
+                sprintf( textBuffer, "%d m/s", windgust );
+                DebugPrint( textBuffer );
+                DebugPrint( "\n"  );
+#endif
+            }
+#ifdef DEBUG_PRINT
+
+            else
+                DebugPrint( "\n"  );
+#endif
+
+            // advance to next quartet
             q += 4;
         }
     }
@@ -258,94 +301,6 @@ uint8_t DecodeFrame( uint8_t* bytes, Frame* frame )
     free( nibbles );
     
     return frame->frameLength;
-    
-    
-    
-//
-//
-//    uint8_t* sbuf = bytes;
-//    uint8_t dataSets = sbuf[1] & 0xF;
-//  frame->IsValid = true;
-//  frame->Header = (bytes[0] & 0xF0) >> 4;
-//  frame->frameLength = dataSets * 2 + 2 + 1;
-//
-//  frame->CRC = bytes[frame->frameLength-1];
-//  if (frame->CRC != CalculateCRC(bytes, frame->frameLength)) {
-//    frame->IsValid = false;
-//  }
-//  if (frame->Header != 0xA) {
-//    frame->IsValid = false;
-//  }
-//  if (!frame->IsValid) {
-//      return 0;
-//  }
-//    static const char *compass[] = {"N  ", "NNE", "NE ", "ENE", "E  ", "ESE", "SE ", "SSE", "S  ", "SSW", "SW ", "WSW", "W  ", "WNW", "NW ", "NNW"};
-//    static const char *sensors[] = {"Temp", "Hum ", "Rain", "Wind", "Gust"};
-//    uint8_t windbearing = 0;
-//    // station id
-//    uint8_t stationid = ((sbuf[0] & 0x0F) << 6) | ((sbuf[1] & 0xC0) >>6);
-//    int8_t temp = 0;
-//    int8_t tempDeci = 0;
-//    //humidity
-//    uint8_t humidity = 0;
-//    //wind speed
-//    uint8_t windspeed = 0;
-//    //wind gust
-//    uint8_t windgust = 0;
-//    //rainfall
-//    uint16_t rain = 0;
-//
-//    for (uint8_t i = 0; i < dataSets; i++) {
-//        uint8_t j = 2 + i*2;
-//        uint8_t sensorType = (sbuf[j] & 0xF0) >> 4;
-//        switch (sensorType) { // e.g. a 5a 5 0 628 1 033 2 000 3 e00 4 000 bd
-//            case 0:    //  0: temperature, 3 nibbles bcd coded tenth of °c plus 400 (here 628-400 = 22.8°C)
-//                temp = BCD2bin(sbuf[j] & 0x0F) * 10 + BCD2bin((sbuf[j + 1] & 0xF0)>>4);
-//                temp = temp;
-//                tempDeci = BCD2bin((sbuf[j + 1] & 0x0F));
-//                frame->SensorType[i] = sensors[sensorType];
-//                frame->Temperature = ((temp * 10 + tempDeci) - 400) / 10;
-//                break;
-//            case 1: // 1: humidity, 3 nibbles bcd coded (here 33 %rH), meaning of 1st nibble still unclear
-//                humidity = BCD2bin(sbuf[j + 1]);
-//                frame->SensorType[i] = sensors[sensorType];
-//                frame->Humidity = humidity;
-//                break;
-//            case 2: // 2: rain, 3 nibbles, counter of contact closures
-//                rain = ((sbuf[j] & 0x0F) + (sbuf[j + 1]) * 100);
-//                frame->SensorType[i] = sensors[sensorType];
-//                frame->Rain = rain;
-//                break;
-//            case 3:    //3: wind, first nibble direction of wind vane (multiply by 22.5 to obtain degrees,
-//                    // here 0xe*22.5 = 315 degrees)
-//                    // next two nibbles wind speed in m per sec (i.e. no more than 255 m/s; 9th bit still not found)
-//                windbearing = (sbuf[j] & 0x0F);
-//                windspeed = (sbuf[j + 1]);
-//                frame->SensorType[i] = sensors[sensorType];
-//                frame->WindSpeed = windspeed;
-//                frame->WindBearing = compass[windbearing];
-//                break;
-//            case 4: // 4: gust, speed in m per sec (yes, TX23 sensor does measure gusts and data are transmitted
-//                    // but not displayed by WS1600), number of significant nibbles still unclear
-//                windgust = ((sbuf[j] & 0x0F) * 256 + (sbuf[j + 1]));
-//                frame->SensorType[i] = sensors[sensorType];
-//                frame->WindGust = windgust;
-//                break;
-//            default:
-//                frame->SensorType[i] = "Unkown";
-//                break;
-//        }
-//
-//    }
-//  frame->ID = stationid;
-//  frame->DataSets = dataSets;
-//  return frame->frameLength;
-}
-
-
-uint8_t DisplayFrame( uint8_t* data, Frame* frame )
-{
-    return 0;
 }
 
 
@@ -354,7 +309,7 @@ bool AnalyzeFrame( uint8_t* data )
     Frame frame = {};
     if( DecodeFrame( data, &frame ) )
     {
-        DisplayFrame( data, &frame );
+        Serial1.write( (uint8_t*)&frame, sizeof( Frame ) );
         return true;
     }
     return false;
