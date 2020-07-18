@@ -116,6 +116,8 @@ void SerialWrite ( uint8_t c ) {
 void SerialPrint_P(PGM_P str, void (*f)(uint8_t) = SerialWrite ) {
   for (uint8_t c; (c = pgm_read_byte(str)); str++) (*f)(c);
 }
+#else
+#define SerialPrint(x)
 #endif
 
 
@@ -351,7 +353,7 @@ void setup()
     delay(10);
     
     if( !rf69.init() ) {
-        outputPort.println("RFM69 radio init failed");
+        SerialPrint("RFM69 radio init failed\n");
         while (1);
     }
 
@@ -360,7 +362,7 @@ void setup()
     // Defaults after init are 434.0MHz, modulation GFSK_Rb250Fd250, +13dbM (for low power module)
     // No encryption
     if( !rf69.setFrequency(RF69_FREQ) ) {
-        outputPort.println("setFrequency failed");
+        SerialPrint("setFrequency failed\n");
     }
 
     rf69.spiWrite(RH_RF69_REG_13_OCP, RF_OCP_OFF);
@@ -387,7 +389,7 @@ void setup()
     // ishighpowermodule flag set like this:
     rf69.setTxPower(20, true);  // range from 14-20 for power, 2nd arg must be true for 69HCW
     
-    outputPort.println("RFM69 based TX31U-IT receiver starting up...\nFar Out Labs, LLC (c) 2020");
+    SerialPrint("RFM69 based TX31U-IT receiver starting up...\nFar Out Labs, LLC (c) 2020\n");
 }
 
 void receive()
@@ -402,7 +404,7 @@ void receive()
         {
             if (!len)
             {
-                outputPort.println( "Empty receive buffer!" );
+                SerialPrint( "Empty receive buffer!\n" );
                 return;
             }
 
@@ -414,39 +416,16 @@ void receive()
                     Blink(LED, 100, 1);
                     frequencyHop();
                 }
-                outputPort.println( "." );
+                SerialPrint( ".\n" );
             }
         }
         else
         {
-            outputPort.println("Receive failed");
+            SerialPrint("Receive failed\n");
         }
     }
 }
 
-/*
-void frequencyHop()
-{
-    ++s_freq;
-    if( s_freq > 1 )
-        s_freq = 0;
-    
-    switch( s_freq )
-    {
-        case 0:
-            if( !rf69.setFrequency( RF69_FREQ1 ) )
-                outputPort.println("setFrequency failed: 915MHz");
-            outputPort.println("\nhop to: 915MHz");
-            break;
-
-        case 1:
-            if( !rf69.setFrequency( RF69_FREQ2 ) )
-                outputPort.println("setFrequency failed: 920MHz");
-            outputPort.println("\nhop to: 920MHz");
-            break;
-    }
-}
-*/
 
 void frequencyHop()
 {
@@ -458,20 +437,20 @@ void frequencyHop()
     {
         case 0:
             if( !rf69.setFrequency( RF69_FREQ ) )
-                outputPort.println("setFrequency failed: 910MHz");
-            outputPort.println("\nhop to: 910MHz");
+                SerialPrint("setFrequency failed: 910MHz\n");
+            SerialPrint("\nhop to: 910MHz\n");
             break;
 
         case 1:
             if( !rf69.setFrequency( RF69_FREQ1 ) )
-                outputPort.println("setFrequency failed: 915MHz");
-            outputPort.println("\nhop to: 915MHz");
+                SerialPrint("setFrequency failed: 915MHz\n");
+            SerialPrint("\nhop to: 915MHz\n");
             break;
 
         case 2:
             if( !rf69.setFrequency( RF69_FREQ2 ) )
-                outputPort.println("setFrequency failed: 920MHz");
-            outputPort.println("\nhop to: 920MHz");
+                SerialPrint("setFrequency failed: 920MHz\n");
+            SerialPrint("\nhop to: 920MHz\n");
             break;
     }
 }
@@ -495,7 +474,9 @@ void loop()
             s_lna_gain = 0;
 
             rf69.spiWrite(RH_RF69_REG_18_LNA, s_lna_gain);
+#ifdef REGISTER_DETAIL
             outputPort.print( "LNA gain: " ); outputPort.println( s_lna_gain );
+#endif
         }
     }
 
@@ -511,8 +492,10 @@ void loop()
 
     if( s_read_rssi )
     {
+#ifdef REGISTER_DETAIL
         outputPort.print( "rssiRead: " );
         outputPort.println( rf69.rssiRead() );
+#endif
     }
 }
 
