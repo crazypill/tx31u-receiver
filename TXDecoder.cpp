@@ -192,7 +192,8 @@ uint8_t DecodeFrame( uint8_t* bytes, Frame* frame )
     
     frame->station_id = nibbles[1] << 4 | (nibbles[2] & 0xC);   // did I assemble this backwards?  strip out the error and aquire bits
     // !!@ don't forget to include error and acquiring bits in frame struct
-
+    bool errorBit = nibbles[2] & 0x1;   // this means the wind data is not valid...  (it could be more, but so far)
+    
 #ifdef DEBUG_PRINT
     Serial.print( "Weather station id: " );
     Serial.print( frame->station_id, HEX );
@@ -271,7 +272,7 @@ uint8_t DecodeFrame( uint8_t* bytes, Frame* frame )
                 DebugPrint( "\n"  );
 #endif
             }
-            else if( type == kType_wind )
+            else if( type == kType_wind && !errorBit )
             {
                 // first nibble direction of wind vane (multiply by 22.5 to obtain degrees, here 0xe*22.5 = 315 degrees)
                 // next two nibbles wind speed in m per sec (i.e. no more than 255 m/s; 9th bit still not found)
