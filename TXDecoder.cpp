@@ -292,13 +292,14 @@ uint8_t DecodeFrame( uint8_t* bytes, Frame* frame )
             else if( type == kType_gust && !errorBit )
             {
                 // gust speed in m per sec - !!@ check this
-                int windgust = q[1] * 256 + q[2];
-                frame->windGustMs = windgust;
+//                int windgust = q[1] * 256 + q[2];
+                int windgust = (q[1] << 8) | (q[2] << 4) | q[3];
+                frame->windGustMs = windgust / 10.0;
                 frame->flags |= kDataFlag_gust;
 
 #if 1//def DEBUG_PRINT
                 char textBuffer[128];
-                sprintf( textBuffer, "%d m/s (%x %x %x)", windgust, q[1], q[2], q[3] );
+                sprintf( textBuffer, "%0.2f m/s (%x %x %x)", frame->windGustMs, q[1], q[2], q[3] );
                 Serial.println( textBuffer );
                 //DebugPrint( "\n"  );
 #endif
