@@ -296,10 +296,11 @@ uint8_t DecodeFrame( uint8_t* bytes, Frame* frame )
                 frame->windGustMs = windgust;
                 frame->flags |= kDataFlag_gust;
 
-#ifdef DEBUG_PRINT
-                sprintf( textBuffer, "%d m/s", windgust );
-                DebugPrint( textBuffer );
-                DebugPrint( "\n"  );
+#if 1//def DEBUG_PRINT
+                char textBuffer[128];
+                sprintf( textBuffer, "%d m/s (%x %x %x)", windgust, q[1], q[2], q[3] );
+                Serial.println( textBuffer );
+                //DebugPrint( "\n"  );
 #endif
             }
 #ifdef DEBUG_PRINT
