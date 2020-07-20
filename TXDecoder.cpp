@@ -289,7 +289,7 @@ uint8_t DecodeFrame( uint8_t* bytes, Frame* frame )
                 DebugPrint( "\n"  );
 #endif
             }
-            else if( type == kType_gust )
+            else if( type == kType_gust && !errorBit )
             {
                 // gust speed in m per sec - !!@ check this
                 int windgust = q[1] * 256 + q[2];
