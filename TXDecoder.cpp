@@ -299,11 +299,11 @@ uint8_t DecodeFrame( uint8_t* bytes, Frame* frame )
                 frame->windGustMs = windgust / 10.0;
                 frame->flags |= kDataFlag_gust;
 
-#if 1//def DEBUG_PRINT
+#ifdef DEBUG_PRINT
                 char textBuffer[128];
                 sprintf( textBuffer, "%0.2f m/s (%x %x %x)", frame->windGustMs, q[1], q[2], q[3] );
-                Serial.println( textBuffer );
-                //DebugPrint( "\n"  );
+                DebugPrint( textBuffer );
+                DebugPrint( "\n"  );
 #endif
             }
 #ifdef DEBUG_PRINT
@@ -320,7 +320,6 @@ uint8_t DecodeFrame( uint8_t* bytes, Frame* frame )
             frame->flags |= kDataFlag_pressure;
 
             PM25_AQI_Data airData = {};
-  
             if( aqi.read( &airData ) ) 
             {
                 // and air quality stats...
