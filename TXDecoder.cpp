@@ -143,10 +143,10 @@ uint8_t reverseBits( uint8_t num )
 void TxDecoderInit()
 {
     if( !bmp.begin() )
-    {
         DebugPrint( "Could not find a valid BMP085 sensor, check wiring!\n" );
-        while (1) {}
-    }
+
+    if( !aqi.begin_I2C() ) 
+        DebugPrint( "Could not find a valid PM25AQI sensor, check wiring!\n" );
 }
 
 
