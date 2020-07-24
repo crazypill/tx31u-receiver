@@ -132,10 +132,16 @@ void SerialPrint_P(PGM_P str, void (*f)(uint8_t) = SerialWrite ) {
 #endif
 
 #if defined(ADAFRUIT_FEATHER_M0) // Feather M0 w/Radio
-  #define RFM69_CS      19
-  #define RFM69_INT     18
-  #define RFM69_RST     17
-  #define LED           LED_BUILTIN
+  #define RFM69_CS      8
+  #define RFM69_INT     3
+  #define RFM69_RST     4
+  #define LED           13
+
+  // these are for my proto board
+//  #define RFM69_CS      19
+//  #define RFM69_INT     18
+//  #define RFM69_RST     17
+//  #define LED           LED_BUILTIN
 #endif
 
 #if defined (__AVR_ATmega328P__)  // Feather 328P w/wing
@@ -783,4 +789,3 @@ void ReadAllRegs()
 #endif
   }
 }
-

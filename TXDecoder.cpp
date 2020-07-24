@@ -7,6 +7,7 @@
 
 #include "TXDecoder.h"
 #include <Adafruit_BMP085.h>
+#include "Adafruit_PM25AQI.h"
 
 
 /*
@@ -87,6 +88,7 @@ enum
 
 
 Adafruit_BMP085 bmp;
+Adafruit_PM25AQI aqi = Adafruit_PM25AQI();
 
 
 
@@ -317,6 +319,26 @@ uint8_t DecodeFrame( uint8_t* bytes, Frame* frame )
             frame->pressure = (bmp.readPressure() * pascal2millibar);
             frame->flags |= kDataFlag_pressure;
 
+            PM25_AQI_Data airData = {};
+  
+            if( aqi.read( &airData ) ) 
+            {
+                // and air quality stats...
+                frame->pm10_standard = airData.pm10_standard;
+                frame->pm25_standard = airData.pm25_standard;
+                frame->pm100_standard = airData.pm100_standard;
+                frame->pm10_env = airData.pm10_env;
+                frame->pm25_env = airData.pm25_env;
+                frame->pm100_env = airData.pm100_env;
+                frame->particles_03um = airData.particles_03um;
+                frame->particles_05um = airData.particles_05um;
+                frame->particles_10um = airData.particles_10um;
+                frame->particles_25um = airData.particles_25um;
+                frame->particles_50um = airData.particles_50um;
+                frame->particles_100um = airData.particles_100um;
+                frame->flags |= kDataFlag_airQuality;
+            }
+            
             // advance to next quartet
             q += 4;
         }
