@@ -336,6 +336,10 @@ uint8_t DecodeFrame( uint8_t* bytes, Frame* frame )
                 frame->particles_50um = airData.particles_50um;
                 frame->particles_100um = airData.particles_100um;
                 frame->flags |= kDataFlag_airQuality;
+
+//                char buf[1024];
+//                sprintf( buf, " pm10: %03d (%03d), pm25: %03d (%03d), pm100: %03d (%03d), 3um: %03d, 5um: %03d, 10um: %03d, 25um: %03d, 50um: %03d, 100um: %03d\n", frame->pm10_standard, frame->pm10_env, frame->pm25_standard, frame->pm25_env, frame->pm100_standard, frame->pm100_env, frame->particles_03um, frame->particles_05um, frame->particles_10um, frame->particles_25um, frame->particles_50um, frame->particles_100um );
+//                Serial.println( buf );
             }
             
             // advance to next quartet
