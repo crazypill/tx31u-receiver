@@ -16,7 +16,9 @@ enum
     kDataFlag_gust       = 1 << 4,
     kDataFlag_intTemp    = 1 << 5,
     kDataFlag_pressure   = 1 << 6,
-    kDataFlag_airQuality = 1 << 7
+    kDataFlag_airQuality = 1 << 7,
+    
+    kDataFlag_allMask    = 0xFF
 };
 
 
@@ -47,6 +49,7 @@ typedef struct
     uint16_t particles_50um;      // 5.0um Particle Count
     uint16_t particles_100um;     // 10.0um Particle Count
 
+    // remove these !!@
     uint8_t   CRC;           // just used as part of validation, really doesn't need to be here at all
     uint8_t   frameLength;   // ditto with this guy
 } __attribute__ ((__packed__)) Frame;
