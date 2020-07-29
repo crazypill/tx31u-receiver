@@ -19,7 +19,7 @@
 //#define DEBUG
 //#define REGISTER_DETAIL
 
-
+#define PROTO_BOARD
 
 #ifdef REGISTER_DETAIL
 static const char* s_reg_names[] =
@@ -132,16 +132,18 @@ void SerialPrint_P(PGM_P str, void (*f)(uint8_t) = SerialWrite ) {
 #endif
 
 #if defined(ADAFRUIT_FEATHER_M0) // Feather M0 w/Radio
+#ifndef PROTO_BOARD
   #define RFM69_CS      8
   #define RFM69_INT     3
   #define RFM69_RST     4
   #define LED           13
-
+#else
   // these are for my proto board
-//  #define RFM69_CS      19
-//  #define RFM69_INT     18
-//  #define RFM69_RST     17
-//  #define LED           LED_BUILTIN
+  #define RFM69_CS      19
+  #define RFM69_INT     18
+  #define RFM69_RST     17
+  #define LED           LED_BUILTIN
+#endif // PROTO_BOARD
 #endif
 
 #if defined (__AVR_ATmega328P__)  // Feather 328P w/wing
