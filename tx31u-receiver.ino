@@ -19,7 +19,7 @@
 //#define DEBUG
 //#define REGISTER_DETAIL
 
-#define PROTO_BOARD
+//#define PROTO_BOARD
 
 #ifdef REGISTER_DETAIL
 static const char* s_reg_names[] =

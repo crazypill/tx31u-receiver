@@ -54,8 +54,7 @@ Temp  044 Humi 91 Rain 000 Wind 028  Dir 180 Gust 097  ( 4.4 °C, 91 %rH, no rai
 //#define PRINT_BAD_DATA
 //#define PRINT_PAYLOAD
 //#define DEBUG_PRINT
-
-#define DISABLE_SENSORS
+//#define DISABLE_SENSORS
 
 
 #ifdef DEBUG_PRINT
