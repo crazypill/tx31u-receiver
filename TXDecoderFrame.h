@@ -36,22 +36,20 @@ typedef struct
     float     windGustMs;    // meters/sec
     float     rain;
 
-    uint16_t pm10_standard;       // Standard PM1.0
-    uint16_t pm25_standard;       // Standard PM2.5
-    uint16_t pm100_standard;      // Standard PM10.0
-    uint16_t pm10_env;            // Environmental PM1.0
-    uint16_t pm25_env;            // Environmental PM2.5
-    uint16_t pm100_env;           // Environmental PM10.0
-    uint16_t particles_03um;      // 0.3um Particle Count
-    uint16_t particles_05um;      // 0.5um Particle Count
-    uint16_t particles_10um;      // 1.0um Particle Count
-    uint16_t particles_25um;      // 2.5um Particle Count
-    uint16_t particles_50um;      // 5.0um Particle Count
-    uint16_t particles_100um;     // 10.0um Particle Count
+    uint16_t  pm10_standard;       // Standard PM1.0
+    uint16_t  pm25_standard;       // Standard PM2.5
+    uint16_t  pm100_standard;      // Standard PM10.0
+    uint16_t  pm10_env;            // Environmental PM1.0
+    uint16_t  pm25_env;            // Environmental PM2.5
+    uint16_t  pm100_env;           // Environmental PM10.0
+    uint16_t  particles_03um;      // 0.3um Particle Count
+    uint16_t  particles_05um;      // 0.5um Particle Count
+    uint16_t  particles_10um;      // 1.0um Particle Count
+    uint16_t  particles_25um;      // 2.5um Particle Count
+    uint16_t  particles_50um;      // 5.0um Particle Count
+    uint16_t  particles_100um;     // 10.0um Particle Count
 
-    // remove these !!@
-    uint8_t   CRC;           // just used as part of validation, really doesn't need to be here at all
-    uint8_t   frameLength;   // ditto with this guy
+    uint8_t   CRC;           // used both for incoming radio data, and then reset for outgoing frame
 } __attribute__ ((__packed__)) Frame;
 
 const uint8_t FRAME_LENGTH = 13;

@@ -156,16 +156,16 @@ uint8_t DecodeFrame( uint8_t* bytes, Frame* frame )
     // look at the buffer and see if we can process it (before doing CRC on it) - the first nibble is the
     uint8_t quartets = bytes[1] & 0xF;
     frame->magic = (bytes[0] & 0xF0) >> 4;
-    frame->frameLength = quartets * 2 + 2 + 1;
-    frame->CRC = bytes[frame->frameLength - 1];
+    uint8_t frameLength = quartets * 2 + 2 + 1;
+    frame->CRC = bytes[frameLength - 1];
     frame->flags = 0;
 
-    if( frame->CRC != CalculateCRC( bytes, frame->frameLength - 1 ) )
+    if( frame->CRC != CalculateCRC( bytes, frameLength - 1 ) )
     {
 #ifdef PRINT_BAD_DATA
         Serial.print( "DecodeFrame: bad CRC..." );
         Serial.print( "data: " );
-        for( int i = 0; i < frame->frameLength; i++ )
+        for( int i = 0; i < frameLength; i++ )
             Serial.print( bytes[i], HEX );
         Serial.println();
 #endif
@@ -174,13 +174,13 @@ uint8_t DecodeFrame( uint8_t* bytes, Frame* frame )
     
 #ifdef PRINT_PAYLOAD
     Serial.print( "Payload: " );
-    for( int i = 0; i < frame->frameLength; i++ )
+    for( int i = 0; i < frameLength; i++ )
         Serial.print( bytes[i], HEX );
     Serial.println();
 #endif
     
     // split the data into a nibble stream
-    uint16_t nibbleCount = frame->frameLength * 2;
+    uint16_t nibbleCount = frameLength * 2;
     uint8_t* nibbles = (uint8_t*)malloc( nibbleCount );
     if( !nibbles )
         return 0;
@@ -351,15 +351,19 @@ uint8_t DecodeFrame( uint8_t* bytes, Frame* frame )
 
     free( nibbles );
     
-    return frame->frameLength;
+    return frameLength;
 }
 
 
 bool AnalyzeFrame( uint8_t* data )
 {
     Frame frame = {};
+    memset( &frame, 0, sizeof( Frame ) );
     if( DecodeFrame( data, &frame ) )
     {
+        // do CRC on it for receiver
+        frame.CRC = 0;
+        frame.CRC = CalculateCRC( (uint8_t*)&frame, sizeof( Frame ) );
         Serial1.write( (uint8_t*)&frame, sizeof( Frame ) );
         return true;
     }
