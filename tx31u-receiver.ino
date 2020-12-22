@@ -1,12 +1,9 @@
-// rf69 demo tx rx.pde
-// -*- mode: C++ -*-
-// Example sketch showing how to create a simple messageing client
-// with the RH_RF69 class. RH_RF69 class does not provide for addressing or
-// reliability, so you should only use RH_RF69  if you do not need the higher
-// level messaging abilities.
-// It is designed to work with the other example rf69_server.
-// Demonstrates the use of AES encryption, setting the frequency and modem
-// configuration
+//
+//  tx31u-receiver.ino
+//
+//  Created by Alex Lelievre
+//  Copyright © 2020 Far Out Labs. All rights reserved.
+//
 
 #include <SPI.h>
 #include <RH_RF69.h>
@@ -18,7 +15,7 @@
 //for debugging
 //#define DEBUG
 //#define REGISTER_DETAIL
-
+//#define DISABLE_FREQ_HOP
 //#define PROTO_BOARD
 
 #ifdef REGISTER_DETAIL
@@ -109,7 +106,7 @@ static const char* s_reg_names[] =
 // SERIAL PRINT
 // replace Serial.print("string") with SerialPrint("string")
 #define SerialPrint(x) SerialPrint_P(PSTR(x))
-void SerialWrite ( uint8_t c ) {
+static void SerialWrite ( uint8_t c ) {
     Serial.write ( c );
 }
 
@@ -123,14 +120,6 @@ void SerialPrint_P(PGM_P str, void (*f)(uint8_t) = SerialWrite ) {
 
 
 /************ Radio Setup ***************/
-
-#if defined (__AVR_ATmega32U4__) // Feather 32u4 w/Radio
-  #define RFM69_CS      8
-  #define RFM69_INT     7
-  #define RFM69_RST     4
-  #define LED           13
-#endif
-
 #if defined(ADAFRUIT_FEATHER_M0) // Feather M0 w/Radio
 #ifndef PROTO_BOARD
   #define RFM69_CS      8
@@ -146,13 +135,6 @@ void SerialPrint_P(PGM_P str, void (*f)(uint8_t) = SerialWrite ) {
 #endif // PROTO_BOARD
 #endif
 
-#if defined (__AVR_ATmega328P__)  // Feather 328P w/wing
-  #define RFM69_INT     3  //
-  #define RFM69_CS      4  //
-  #define RFM69_RST     2  // "A"
-  #define LED           13
-#endif
-
 #if defined(ESP8266)    // ESP8266 feather w/wing
   #define RFM69_CS      2    // "E"
   #define RFM69_IRQ     15   // "B"
@@ -166,24 +148,6 @@ void SerialPrint_P(PGM_P str, void (*f)(uint8_t) = SerialWrite ) {
   #define RFM69_INT     27   // "A"
   #define LED           13
 #endif
-
-#define RF_FDEVMSB_90000            0x05
-#define RF_FDEVLSB_90000            0xC3
-
-
-/* Teensy 3.x w/wing
-#define RFM69_RST     9   // "A"
-#define RFM69_CS      10   // "B"
-#define RFM69_IRQ     4    // "C"
-#define RFM69_IRQN    digitalPinToInterrupt(RFM69_IRQ )
-*/
- 
-/* WICED Feather w/wing
-#define RFM69_RST     PA4     // "A"
-#define RFM69_CS      PB4     // "B"
-#define RFM69_IRQ     PA15    // "C"
-#define RFM69_IRQN    RFM69_IRQ
-*/
 
 
 // RegPaLevel
@@ -326,6 +290,16 @@ void SerialPrint_P(PGM_P str, void (*f)(uint8_t) = SerialWrite ) {
 #define RF69_FREQ1 915.000
 #define RF69_FREQ2 919.966
 
+#define RF_FDEVMSB_45000            0x02
+#define RF_FDEVLSB_45000            0xE1
+#define RF_FDEVMSB_90000            0x05
+#define RF_FDEVLSB_90000            0xC3
+#define RF_FDEVMSB_180000           0x0B
+#define RF_FDEVLSB_180000           0x85
+#define RF_FDEVMSB_250000           0x10
+#define RF_FDEVLSB_250000           0x00
+
+
 #define outputPort Serial
 
 
@@ -333,10 +307,10 @@ void SerialPrint_P(PGM_P str, void (*f)(uint8_t) = SerialWrite ) {
 RH_RF69 rf69(RFM69_CS, RFM69_INT);
 
 static int16_t packetnum = 0;  // packet counter, we increment per xmission
-static int  s_lna_gain = 0;
-static bool s_output_temp = false;
-static bool s_read_rssi = false;
-static int  s_blink_counter = 0;
+static int     s_lna_gain = 0;
+static bool    s_output_temp = false;
+static bool    s_read_rssi = false;
+static int     s_blink_counter = 0;
 static uint8_t s_freq = 0;
  
 void setup()
@@ -376,19 +350,21 @@ void setup()
     rf69.spiWrite(RH_RF69_REG_13_OCP, RF_OCP_OFF);
     rf69.spiWrite(RH_RF69_REG_02_DATAMODUL, RH_RF69_DATAMODUL_DATAMODE_PACKET | RH_RF69_DATAMODUL_MODULATIONTYPE_FSK | RH_RF69_DATAMODUL_MODULATIONSHAPING_FSK_NONE);
 
-    int dataRate = 8621;
+    int dataRate = 8620;
     unsigned long r = ((32000000UL + (dataRate / 2)) / dataRate);
     rf69.spiWrite(RH_RF69_REG_03_BITRATEMSB, r >> 8);
     rf69.spiWrite(RH_RF69_REG_04_BITRATELSB, r & 0xFF);
+
     rf69.spiWrite(RH_RF69_REG_05_FDEVMSB, RF_FDEVMSB_90000);
     rf69.spiWrite(RH_RF69_REG_06_FDEVLSB, RF_FDEVLSB_90000);
+
     rf69.spiWrite(RH_RF69_REG_37_PACKETCONFIG1, RH_RF69_PACKETCONFIG1_CRCAUTOCLEAROFF);
     rf69.spiWrite(RH_RF69_REG_3D_PACKETCONFIG2, RF_PACKET2_RXRESTARTDELAY_2BITS | RF_PACKET2_AUTORXRESTART_ON | RF_PACKET2_AES_OFF);
 
     // receive bandwidth
-    rf69.spiWrite(RH_RF69_REG_19_RXBW,  RF_RXBW_DCCFREQ_010 | RF_RXBW_MANT_16 | RF_RXBW_EXP_2); // 125 kHz <- default
-    rf69.spiWrite(RH_RF69_REG_1A_AFCBW, RF_RXBW_DCCFREQ_010 | RF_RXBW_MANT_16 | RF_RXBW_EXP_2); // 125 kHz <- default
-    
+    rf69.spiWrite(RH_RF69_REG_19_RXBW,  RF_RXBW_DCCFREQ_010 | RF_RXBW_MANT_16 | RF_RXBW_EXP_2); // 125 kHz
+    rf69.spiWrite(RH_RF69_REG_1A_AFCBW, RF_RXBW_DCCFREQ_010 | RF_RXBW_MANT_16 | RF_RXBW_EXP_2); // 125 kHz
+   
     rf69.setPreambleLength( 2 );
     rf69.spiWrite(RH_RF69_REG_2E_SYNCCONFIG, RF_SYNC_ON | RF_SYNC_FIFOFILL_AUTO | RF_SYNC_SIZE_2 | RF_SYNC_TOL_0);
     rf69.spiWrite(RH_RF69_REG_6F_TESTDAGC, RH_RF69_TESTDAGC_CONTINUOUSDAGC_IMPROVED_LOWBETAOFF);
@@ -418,7 +394,7 @@ void receive()
 
             if( !s_output_temp )  // don't mess up plot with radio data
             {
-                if( AnalyzeFrame( buf ) )
+                if( AnalyzeFrame( buf, len ) )
                 {
                     // super fast blink
                     Blink(LED, 100, 1);
@@ -437,6 +413,7 @@ void receive()
 
 void frequencyHop()
 {
+#ifndef DISABLE_FREQ_HOP
     ++s_freq;
     if( s_freq > 2 )
         s_freq = 0;
@@ -461,6 +438,7 @@ void frequencyHop()
             SerialPrint("\nhop to: 920MHz\n");
             break;
     }
+#endif
 }
 
 

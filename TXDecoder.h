@@ -1,3 +1,10 @@
+//
+//  TXDecoder.h
+//
+//  Created by Alex Lelievre
+//  Copyright © 2020 Far Out Labs. All rights reserved.
+//
+
 #ifndef _H_TXDecoder
 #define _H_TXDecoder
 
@@ -13,8 +20,8 @@
 
 void     TxDecoderInit();
 uint8_t  CalculateCRC( uint8_t data[], uint8_t frameLength = FRAME_LENGTH );
-uint8_t  DecodeFrame( uint8_t* data, Frame* frame);
-bool     AnalyzeFrame( uint8_t* data );
+uint8_t  DecodeFrame( uint8_t* data, uint8_t len, Frame* frame);
+bool     AnalyzeFrame( uint8_t* data, uint8_t len );
 
 #endif  // !_H_TXDecoder
 

@@ -1,5 +1,5 @@
 //
-//  TXDecoder.c
+//  TXDecoder.cpp
 //  
 //
 //  Created by Alex Lelievre on 7/16/20.
@@ -54,13 +54,14 @@ Temp  044 Humi 91 Rain 000 Wind 028  Dir 180 Gust 097  ( 4.4 °C, 91 %rH, no rai
 //#define PRINT_BAD_DATA
 //#define PRINT_PAYLOAD
 //#define DEBUG_PRINT
+//#define DEBUG_PRINT_RAIN
 //#define DISABLE_SENSORS
 
 
-#ifdef DEBUG_PRINT
+#if defined( DEBUG_PRINT ) || defined( DEBUG_PRINT_RAIN )
 // debug print
 #define DebugPrint(x) DebugPrint_P(PSTR(x))
-void SerialWrite ( uint8_t c ) {
+static void SerialWrite ( uint8_t c ) {
     Serial.write ( c );
 }
 
@@ -151,7 +152,7 @@ void TxDecoderInit()
 }
 
 
-uint8_t DecodeFrame( uint8_t* bytes, Frame* frame )
+uint8_t DecodeFrame( uint8_t* bytes, uint8_t len, Frame* frame )
 {
     // look at the buffer and see if we can process it (before doing CRC on it) - the first nibble is the
     uint8_t quartets = bytes[1] & 0xF;
@@ -208,8 +209,8 @@ uint8_t DecodeFrame( uint8_t* bytes, Frame* frame )
     Serial.println( quartets );
 #endif
     
-#ifdef DEBUG_PRINT
     char textBuffer[128];
+#ifdef DEBUG_PRINT
     const char* compass[] = { "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW" };
     const char* types[]   = { "temp:    ", "humidity:", "rain:    ", "wind:    ", "gust:    " };
 #endif
@@ -254,7 +255,7 @@ uint8_t DecodeFrame( uint8_t* bytes, Frame* frame )
                 frame->rain = 0;    // !!@ not implemented yet
                 frame->flags |= kDataFlag_rain;
 
-#ifdef DEBUG_PRINT
+#if defined( DEBUG_PRINT ) || defined( DEBUG_PRINT_RAIN )
                 sprintf( textBuffer, "%u %u %u", q[1], q[2], q[3] );
                 DebugPrint( textBuffer );
                 DebugPrint( "\n"  );
@@ -355,11 +356,11 @@ uint8_t DecodeFrame( uint8_t* bytes, Frame* frame )
 }
 
 
-bool AnalyzeFrame( uint8_t* data )
+bool AnalyzeFrame( uint8_t* data, uint8_t len )
 {
     Frame frame = {};
     memset( &frame, 0, sizeof( Frame ) );
-    if( DecodeFrame( data, &frame ) )
+    if( DecodeFrame( data, len, &frame ) )
     {
         // do CRC on it for receiver
         frame.CRC = 0;
