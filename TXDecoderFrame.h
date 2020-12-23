@@ -34,7 +34,7 @@ typedef struct
     float     windDirection; // in degrees
     float     windSpeedMs;   // meters/sec
     float     windGustMs;    // meters/sec
-    float     rain;
+    float     rain;          // in mm
 
     uint16_t  pm10_standard;       // Standard PM1.0
     uint16_t  pm25_standard;       // Standard PM2.5
