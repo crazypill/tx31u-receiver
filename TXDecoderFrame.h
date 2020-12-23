@@ -21,6 +21,8 @@ enum
     kDataFlag_allMask    = 0xFF
 };
 
+#define FRAME_LENGTH 13
+
 
 typedef struct
 {
@@ -51,8 +53,6 @@ typedef struct
 
     uint8_t   CRC;           // used both for incoming radio data, and then reset for outgoing frame
 } __attribute__ ((__packed__)) Frame;
-
-const uint8_t FRAME_LENGTH = 13;
 
 
 typedef struct
