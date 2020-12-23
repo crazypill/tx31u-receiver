@@ -53,3 +53,10 @@ typedef struct
 } __attribute__ ((__packed__)) Frame;
 
 const uint8_t FRAME_LENGTH = 13;
+
+
+typedef struct
+{
+    uint8_t   station_id;
+    uint32_t  raw_rain_count;     // these equal 0.5mm but that conversion happens on the server
+} __attribute__ ((__packed__)) RainFrame;
