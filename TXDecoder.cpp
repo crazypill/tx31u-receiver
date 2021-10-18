@@ -152,6 +152,8 @@ void TxDecoderInit()
 }
 
 
+// NOTE: when the transmitter has a low battery (around 1.2 vdc) it switches to a different bit rate
+// and has a smaller preamble -- this code doesn't support that format yet...
 uint8_t DecodeFrame( uint8_t* bytes, uint8_t len, Frame* frame )
 {
     // look at the buffer and see if we can process it (before doing CRC on it) - the first nibble is the
